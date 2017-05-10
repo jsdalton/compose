@@ -614,12 +614,8 @@ class Service(object):
         numbers = [c.number for c in containers]
         return 1 if not numbers else max(numbers) + 1
 
-    def _get_aliases(self, network, container=None):
-        return list(
-            {self.name} |
-            ({container.short_id} if container else set()) |
-            set(network.get('aliases', ()))
-        )
+    def _get_aliases(self, network):
+        return list({self.name} | set(network.get('aliases', ())))
 
     def build_default_networking_config(self):
         if not self.networks:
