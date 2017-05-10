@@ -490,15 +490,15 @@ class Service(object):
                 container.attach_log_stream()
             return self.start_container(container)
 
-    def start_container(self, container, network_aliases=True):
-        self.connect_container_to_networks(container, network_aliases)
+    def start_container(self, container, use_network_aliases=True):
+        self.connect_container_to_networks(container, use_network_aliases)
         try:
             container.start()
         except APIError as ex:
             raise OperationFailedError("Cannot start service %s: %s" % (self.name, ex.explanation))
         return container
 
-    def connect_container_to_networks(self, container, network_aliases=True):
+    def connect_container_to_networks(self, container, use_network_aliases=True):
         connected_networks = container.get('NetworkSettings.Networks')
 
         for network, netdefs in self.networks.items():
@@ -510,10 +510,7 @@ class Service(object):
                     container.id,
                     network)
 
-            if network_aliases:
-                aliases = self._get_aliases(netdefs)
-            else:
-                aliases = []
+            aliases = self._get_aliases(netdefs) if use_network_aliases else []
 
             self.client.connect_container_to_network(
                 container.id, network,
