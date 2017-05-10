@@ -734,6 +734,7 @@ class TopLevelCommand(object):
             -T                    Disable pseudo-tty allocation. By default `docker-compose run`
                                   allocates a TTY.
             -w, --workdir=""      Working directory inside the container
+            --use-alias           Assign service network aliases to the container.
         """
         service = self.project.get_service(options['SERVICE'])
         detach = options['-d']
@@ -1131,13 +1132,15 @@ def run_one_off_container(container_options, project, service, options):
 
     project.initialize()
 
+    network_aliases = options['--use-alias']
+    print(options)
     container = service.create_container(
         quiet=True,
         one_off=True,
         **container_options)
 
     if options['-d']:
-        service.start_container(container)
+        service.start_container(container, network_aliases)
         print(container.name)
         return
 
@@ -1149,7 +1152,7 @@ def run_one_off_container(container_options, project, service, options):
     try:
         try:
             if IS_WINDOWS_PLATFORM:
-                service.connect_container_to_networks(container)
+                service.connect_container_to_networks(container, network_aliases)
                 exit_code = call_docker(["start", "--attach", "--interactive", container.id])
             else:
                 operation = RunOperation(
@@ -1160,7 +1163,7 @@ def run_one_off_container(container_options, project, service, options):
                 )
                 pty = PseudoTerminal(project.client, operation)
                 sockets = pty.sockets()
-                service.start_container(container)
+                service.start_container(container, network_aliases)
                 pty.start(sockets)
                 exit_code = container.wait()
         except signals.ShutdownException:
